@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GTX Admin Portal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#F8F9FA;color:#212529;font-size:13px;display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:230px;background:#fff;border-right:1px solid #DEE2E6;flex-shrink:0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;overflow-y:auto;z-index:20}
+.sidebar-logo{padding:14px;border-bottom:1px solid #DEE2E6;font-weight:700;font-size:15px;color:#212529;flex-shrink:0}
+.sidebar-logo span{color:#E8622A}
+.sidebar-nav{flex:1;padding:6px 0}
+
+/* Section divider label */
+.nav-section-label{padding:14px 14px 4px;font-size:10px;font-weight:700;color:#ADB5BD;text-transform:uppercase;letter-spacing:.7px}
+
+/* Plain nav item (no children) */
+.nav-plain{padding:8px 14px;cursor:pointer;color:#6C757D;font-size:12.5px;border-left:3px solid transparent;display:flex;align-items:center;gap:8px}
+.nav-plain:hover{background:#FFF5F2;color:#E8622A}
+.nav-plain.active{border-left:3px solid #E8622A;background:#FFF5F2;color:#E8622A;font-weight:500}
+
+/* Expandable parent */
+.nav-item{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;cursor:pointer;color:#6C757D;font-size:12.5px;border-left:3px solid transparent;user-select:none}
+.nav-item:hover{background:#FFF5F2;color:#E8622A}
+.nav-item.active{border-left:3px solid #E8622A;background:#FFF5F2;color:#E8622A;font-weight:500}
+.nav-item-left{display:flex;align-items:center;gap:8px}
+.nav-icon{font-size:13px;width:16px;text-align:center}
+.nav-chevron{font-size:10px;color:#ADB5BD;transition:transform .18s}
+.nav-chevron.open{transform:rotate(90deg)}
+.nav-sub{display:none}
+.nav-sub.open{display:block}
+.nav-sub-item{padding:7px 14px 7px 38px;cursor:pointer;color:#6C757D;font-size:12px;border-left:3px solid transparent;display:block}
+.nav-sub-item:hover{background:#FFF5F2;color:#E8622A}
+.nav-sub-item.active{border-left:3px solid #E8622A;background:#FFF5F2;color:#E8622A;font-weight:500}
+
+/* Pinned item — same style but with a subtle teal left accent when not active */
+.nav-pinned{padding:8px 14px;cursor:pointer;font-size:12.5px;border-left:3px solid #0B9A8A;display:flex;align-items:center;gap:8px;background:#F0FBF9;color:#0B6B5E;font-weight:500}
+.nav-pinned:hover{background:#E0F5F2}
+.nav-pinned.active{border-left:3px solid #E8622A;background:#FFF5F2;color:#E8622A}
+
+/* Muted section — visually de-emphasised */
+.nav-muted .nav-item,.nav-muted .nav-plain,.nav-muted .nav-sub-item{color:#ADB5BD;font-size:12px}
+.nav-muted .nav-item:hover,.nav-muted .nav-plain:hover,.nav-muted .nav-sub-item:hover{color:#6C757D;background:#FAFAFA}
+.nav-muted .nav-section-label{color:#CED4DA}
+
+/* MAIN */
+.main{margin-left:230px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #DEE2E6;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.topbar-title{font-size:15px;font-weight:600;color:#212529}
+.topbar-right{display:flex;align-items:center;gap:10px;color:#6C757D;font-size:13px}
+.avatar{width:32px;height:32px;border-radius:50%;background:#E8622A;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+.content{padding:20px 24px;flex:1}
+
+/* SCREEN */
+.screen{display:none}
+.screen.active{display:block}
+
+/* CALL-TO-ACTION BANNER — appears at top of dashboard */
+.dc-banner{background:#fff;border:1px solid #DEE2E6;border-left:4px solid #E8622A;border-radius:6px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.dc-banner-left{display:flex;align-items:center;gap:14px}
+.dc-banner-icon{width:38px;height:38px;border-radius:8px;background:#FFF0EA;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.dc-banner-title{font-size:14px;font-weight:600;color:#212529;margin-bottom:2px}
+.dc-banner-sub{font-size:12px;color:#6C757D}
+.dc-banner-pills{display:flex;gap:8px;flex-wrap:wrap}
+.dc-pill{font-size:11.5px;padding:3px 10px;border-radius:12px;font-weight:500;cursor:pointer;border:1px solid transparent}
+.dc-pill-new{background:#EEF4FF;color:#0D6EFD;border-color:#C7DBFF}
+.dc-pill-confirmed{background:#F3F4F6;color:#6C757D;border-color:#DEE2E6}
+.dc-pill-noshow{background:#FFF5E6;color:#FD7E14;border-color:#FFD6A5}
+.dc-pill-completed{background:#ECFDF5;color:#198754;border-color:#A3E4C1}
+
+/* METRIC CARDS */
+.metrics-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
+.metric-card{background:#fff;border:1px solid #DEE2E6;border-radius:6px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.metric-card:hover{border-color:#E8622A}
+.metric-icon{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.mi-blue{background:#E7F1FF}
+.mi-green{background:#E6F9F0}
+.mi-orange{background:#FFF0EA}
+.mi-gray{background:#F3F3F3}
+.mi-teal{background:#E0F5F2}
+.metric-label{font-size:11px;color:#6C757D;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+.metric-value{font-size:20px;font-weight:700;color:#212529}
+.metric-card.highlight{border-color:#E8622A}
+
+/* FILTER ROW */
+.filter-row{background:#fff;border:1px solid #DEE2E6;border-radius:6px;padding:11px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.filter-input{border:1px solid #DEE2E6;border-radius:4px;padding:5px 9px;font-size:12px;font-family:inherit;color:#495057;background:#fff;height:30px}
+.filter-input:focus{outline:none;border-color:#E8622A}
+.filter-select{border:1px solid #DEE2E6;border-radius:4px;padding:5px 9px;font-size:12px;font-family:inherit;color:#495057;background:#fff;height:30px;cursor:pointer}
+.btn-orange{background:#E8622A;color:#fff;border:none;border-radius:4px;padding:5px 13px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;height:30px}
+.btn-orange:hover{background:#CF561F}
+.btn-outline{background:#fff;color:#495057;border:1px solid #DEE2E6;border-radius:4px;padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit;height:30px}
+.btn-outline:hover{background:#F8F9FA}
+.filter-spacer{flex:1}
+
+/* TABLE */
+.table-card{background:#fff;border:1px solid #DEE2E6;border-radius:6px;overflow:hidden}
+.table-header-bar{padding:11px 16px;border-bottom:1px solid #DEE2E6;display:flex;align-items:center;justify-content:space-between}
+.table-title{font-size:13px;font-weight:600;color:#212529}
+table{width:100%;border-collapse:collapse}
+thead tr{background:#F8F9FA}
+th{padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:#6C757D;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #DEE2E6;white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid #F1F3F5;font-size:12.5px;color:#212529;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.clickable:hover td{background:#FAFAFA;cursor:pointer}
+.pagination{padding:9px 16px;display:flex;align-items:center;justify-content:flex-end;gap:14px;border-top:1px solid #DEE2E6;font-size:12px;color:#6C757D}
+.pagination select{border:1px solid #DEE2E6;border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit}
+.page-nav{display:flex;gap:3px}
+.page-btn{width:24px;height:24px;border:1px solid #DEE2E6;background:#fff;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;color:#495057}
+.page-btn:disabled{opacity:.35;cursor:default}
+
+/* STATUS */
+.status-new{color:#0D6EFD;font-size:12px;font-weight:500}
+.status-confirmed{color:#6C757D;font-size:12px;font-weight:500}
+.status-completed{color:#198754;font-size:12px;font-weight:500}
+.status-subscribed{color:#0B9A8A;font-size:12px;font-weight:500}
+.status-noshow{color:#FD7E14;font-size:12px;font-weight:500}
+.status-notqualified{color:#DC3545;font-size:12px;font-weight:500}
+.status-declined{color:#6C757D;font-size:12px;font-weight:500}
+
+.source-label{font-size:11px;padding:2px 7px;border-radius:3px;font-weight:500;display:inline-block}
+.src-job{background:#EEF2FF;color:#3730A3}
+.src-b2b{background:#E0F5F2;color:#0B6B5E}
+
+/* ACTION DROPDOWN */
+.action-wrap{position:relative;display:inline-block}
+.action-btn{background:#fff;border:1px solid #DEE2E6;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;color:#495057;font-family:inherit;display:flex;align-items:center;gap:4px}
+.action-btn:hover{background:#F8F9FA}
+.action-menu{display:none;position:absolute;right:0;top:100%;background:#fff;border:1px solid #DEE2E6;border-radius:4px;min-width:140px;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.action-menu.open{display:block}
+.action-menu-item{padding:7px 14px;cursor:pointer;font-size:12px;color:#212529;white-space:nowrap}
+.action-menu-item:hover{background:#F8F9FA;color:#E8622A}
+
+.status-select{border:none;background:transparent;font-family:inherit;font-size:12px;cursor:pointer;padding:0;outline:none}
+
+/* DETAIL VIEW */
+.detail-back{font-size:12.5px;color:#E8622A;cursor:pointer;margin-bottom:16px;display:inline-flex;align-items:center;gap:5px}
+.detail-back:hover{text-decoration:underline}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.detail-card{background:#fff;border:1px solid #DEE2E6;border-radius:6px;padding:16px}
+.detail-card-full{background:#fff;border:1px solid #DEE2E6;border-radius:6px;padding:16px;margin-top:14px}
+.detail-section-title{font-size:10.5px;font-weight:700;color:#6C757D;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F1F3F5}
+.detail-row{display:flex;margin-bottom:9px;gap:8px}
+.detail-label{font-size:11.5px;color:#6C757D;width:130px;flex-shrink:0}
+.detail-value{font-size:12.5px;color:#212529;flex:1}
+.detail-notes{background:#F8F9FA;border:1px solid #DEE2E6;border-radius:4px;padding:10px 12px;font-size:12.5px;color:#495057;line-height:1.6}
+.detail-textarea{width:100%;border:1px solid #DEE2E6;border-radius:4px;padding:9px 11px;font-size:12.5px;font-family:inherit;resize:vertical;min-height:76px;color:#495057}
+.detail-textarea:focus{outline:none;border-color:#E8622A}
+.detail-status-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+.detail-status-select{border:1px solid #DEE2E6;border-radius:4px;padding:5px 9px;font-size:12.5px;font-family:inherit;color:#495057}
+.log-entry{padding:9px 0;border-bottom:1px solid #F1F3F5;font-size:12.5px}
+.log-entry:last-child{border-bottom:none}
+.log-time{font-size:11px;color:#ADB5BD;margin-bottom:2px}
+.log-text{color:#495057;line-height:1.5}
+.add-note-area{margin-top:12px;display:flex;gap:8px;align-items:flex-start}
+.add-note-input{flex:1;border:1px solid #DEE2E6;border-radius:4px;padding:6px 9px;font-size:12px;font-family:inherit;resize:none}
+.add-note-input:focus{outline:none;border-color:#E8622A}
+
+/* DASH TABLES */
+.dash-tables{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.placeholder-screen{display:flex;align-items:center;justify-content:center;min-height:300px;color:#ADB5BD;font-size:14px;flex-direction:column;gap:8px}
+.dash-filter{background:#fff;border:1px solid #DEE2E6;border-radius:6px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:#212529;color:#fff;font-size:12.5px;padding:10px 16px;border-radius:6px;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* CV MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:#fff;border-radius:6px;width:680px;max-width:94vw;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid #DEE2E6}
+.modal-header{padding:14px 18px;border-bottom:1px solid #DEE2E6;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-header-title{font-size:14px;font-weight:600;color:#212529}
+.modal-header-meta{font-size:12px;color:#6C757D;margin-top:2px}
+.modal-close{background:#F8F9FA;border:1px solid #DEE2E6;border-radius:4px;width:28px;height:28px;cursor:pointer;font-size:16px;color:#6C757D;display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:#F1F3F5}
+.modal-toolbar{padding:10px 18px;border-bottom:1px solid #DEE2E6;display:flex;align-items:center;gap:8px;flex-shrink:0;background:#F8F9FA}
+.modal-body{flex:1;overflow-y:auto;padding:28px 36px;background:#fff}
+.cv-name{font-size:20px;font-weight:700;color:#212529;margin-bottom:2px}
+.cv-contact{font-size:12px;color:#6C757D;margin-bottom:20px}
+.cv-section{margin-bottom:20px}
+.cv-section-title{font-size:11px;font-weight:700;color:#6C757D;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #DEE2E6;padding-bottom:6px;margin-bottom:12px}
+.cv-entry{margin-bottom:12px}
+.cv-entry-title{font-size:13px;font-weight:600;color:#212529}
+.cv-entry-sub{font-size:12px;color:#6C757D;margin-bottom:4px}
+.cv-entry-body{font-size:12.5px;color:#495057;line-height:1.65}
+.cv-skills{display:flex;flex-wrap:wrap;gap:6px}
+.cv-skill{background:#F3F4F6;color:#495057;font-size:11.5px;padding:3px 10px;border-radius:3px;border:1px solid #E5E7EB}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">GT<span>X</span> Admin</div>
+  <div class="sidebar-nav">
+
+    <!-- PRIORITY SECTION -->
+    <div class="nav-section-label">Priority</div>
+    <div class="nav-plain active" id="nav-dashboard" onclick="showScreen('dashboard');setActive('nav-dashboard')">
+      <span class="nav-icon">▣</span> Dashboard
+    </div>
+    <div class="nav-pinned" id="nav-dc" onclick="showScreen('discovery');setActive('nav-dc')">
+      <span class="nav-icon">📞</span> Discovery Calls
+      <span id="new-badge" style="margin-left:auto;background:#E8622A;color:#fff;font-size:10px;padding:1px 7px;border-radius:10px;font-weight:600">2 new</span>
+    </div>
+
+    <!-- DELIVERY SECTION -->
+    <div class="nav-section-label">Delivery</div>
+    <div class="nav-item" onclick="toggleSection('s-cand')">
+      <div class="nav-item-left"><span class="nav-icon">🙋</span> Candidate Management</div>
+      <span class="nav-chevron" id="chev-cand">›</span>
+    </div>
+    <div class="nav-sub" id="s-cand">
+      <div class="nav-sub-item" onclick="showPlaceholder('Talent Search')">Talent Search</div>
+      <div class="nav-sub-item" onclick="showPlaceholder('Candidate Directory')">Candidate Directory</div>
+    </div>
+    <div class="nav-item" onclick="toggleSection('s-job')">
+      <div class="nav-item-left"><span class="nav-icon">💼</span> Job Management</div>
+      <span class="nav-chevron" id="chev-job">›</span>
+    </div>
+    <div class="nav-sub" id="s-job">
+      <div class="nav-sub-item" onclick="showPlaceholder('All Job Listings')">All Job Listings</div>
+      <div class="nav-sub-item" onclick="showPlaceholder('Post a Job')">Post a Job</div>
+    </div>
+    <div class="nav-item" onclick="toggleSection('s-cs')">
+      <div class="nav-item-left"><span class="nav-icon">⭐</span> Client Success</div>
+      <span class="nav-chevron" id="chev-cs">›</span>
+    </div>
+    <div class="nav-sub" id="s-cs"></div>
+    <div class="nav-item" onclick="toggleSection('s-slots')">
+      <div class="nav-item-left"><span class="nav-icon">🕐</span> Consultation Slots</div>
+      <span class="nav-chevron" id="chev-slots">›</span>
+    </div>
+    <div class="nav-sub" id="s-slots">
+      <div class="nav-sub-item" onclick="showPlaceholder('Scheduled Bookings')">Scheduled Bookings</div>
+      <div class="nav-sub-item" onclick="showPlaceholder('Add New Slot')">Add New Slot</div>
+    </div>
+
+    <!-- ADMIN SECTION — muted -->
+    <div class="nav-muted">
+      <div class="nav-section-label">Admin</div>
+      <div class="nav-item" onclick="toggleSection('s-client')">
+        <div class="nav-item-left"><span class="nav-icon">👥</span> Client Management</div>
+        <span class="nav-chevron" id="chev-client">›</span>
+      </div>
+      <div class="nav-sub" id="s-client">
+        <div class="nav-sub-item" onclick="showPlaceholder('Company Directory')">Company Directory</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Client Accounts')">Client Accounts</div>
+      </div>
+      <div class="nav-item" onclick="toggleSection('s-partner')">
+        <div class="nav-item-left"><span class="nav-icon">🤝</span> Partners Management</div>
+        <span class="nav-chevron" id="chev-partner">›</span>
+      </div>
+      <div class="nav-sub" id="s-partner">
+        <div class="nav-sub-item" onclick="showPlaceholder('Partner Plans')">Partner Plans</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Partners Directory')">Partners Directory</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Wallet List')">Wallet List</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Wallet Plan')">Wallet Plan</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Subscribed Users')">Subscribed Users</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Contact Us')">Contact Us</div>
+      </div>
+      <div class="nav-item" onclick="toggleSection('s-sales')">
+        <div class="nav-item-left"><span class="nav-icon">📈</span> Sales Management</div>
+        <span class="nav-chevron" id="chev-sales">›</span>
+      </div>
+      <div class="nav-sub" id="s-sales">
+        <div class="nav-sub-item" onclick="showPlaceholder('Client Leads')">Client Leads</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Candidate Lead')">Candidate Lead</div>
+      </div>
+      <div class="nav-item" onclick="toggleSection('s-reports')">
+        <div class="nav-item-left"><span class="nav-icon">📊</span> Admin Reports</div>
+        <span class="nav-chevron" id="chev-reports">›</span>
+      </div>
+      <div class="nav-sub" id="s-reports">
+        <div class="nav-sub-item" onclick="showPlaceholder('Team Activity')">Team Activity</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Hiring Activities')">Hiring Activities</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Search Results — Skills')">Search Results — Skills</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Recruiter-wise Report')">Recruiter-wise Report</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Client Report')">Client Report</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Job Status Report')">Job Status Report</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Source Report')">Source Report</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Active Candidates Report')">Active Candidates Report</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Offer Pipeline Report')">Offer Pipeline Report</div>
+      </div>
+      <div class="nav-item" onclick="toggleSection('s-cc')"><div class="nav-item-left"><span class="nav-icon">⚙️</span> Control Centre</div><span class="nav-chevron" id="chev-cc">›</span></div>
+      <div class="nav-sub" id="s-cc"></div>
+      <div class="nav-item" onclick="toggleSection('s-chat')"><div class="nav-item-left"><span class="nav-icon">💬</span> Chatbot</div><span class="nav-chevron" id="chev-chat">›</span></div>
+      <div class="nav-sub" id="s-chat"></div>
+      <div class="nav-item" onclick="toggleSection('s-banners')"><div class="nav-item-left"><span class="nav-icon">🖼</span> Banners</div><span class="nav-chevron" id="chev-banners">›</span></div>
+      <div class="nav-sub" id="s-banners">
+        <div class="nav-sub-item" onclick="showPlaceholder('Home Banners')">Home Banners</div>
+      </div>
+      <div class="nav-plain" onclick="showPlaceholder('Country Management')"><span class="nav-icon">🌍</span> Country Management</div>
+      <div class="nav-plain" onclick="showPlaceholder('Content Management')"><span class="nav-icon">📝</span> Content Management</div>
+      <div class="nav-plain" onclick="showPlaceholder('Back2Bharat Resource')"><span class="nav-icon">🏠</span> Back2Bharat Resource</div>
+      <div class="nav-item" onclick="toggleSection('s-events')"><div class="nav-item-left"><span class="nav-icon">🗓</span> Event Management</div><span class="nav-chevron" id="chev-events">›</span></div>
+      <div class="nav-sub" id="s-events">
+        <div class="nav-sub-item" onclick="showPlaceholder('All Events')">All Events</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Event Registrations')">Event Registrations</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Event Banners')">Event Banners</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Past Events')">Past Events</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Wall of Fame')">Wall of Fame</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('B2B Lead Page')">B2B Lead Page</div>
+      </div>
+      <div class="nav-item" onclick="toggleSection('s-plans')"><div class="nav-item-left"><span class="nav-icon">💳</span> GTX Plan Management</div><span class="nav-chevron" id="chev-plans">›</span></div>
+      <div class="nav-sub" id="s-plans">
+        <div class="nav-sub-item" onclick="showPlaceholder('Candidate Plans')">Candidate Plans</div>
+        <div class="nav-sub-item" onclick="showPlaceholder('Client Plans')">Client Plans</div>
+      </div>
+      <div class="nav-item" onclick="toggleSection('s-sub')"><div class="nav-item-left"><span class="nav-icon">🔁</span> Subscription Management</div><span class="nav-chevron" id="chev-sub">›</span></div>
+      <div class="nav-sub" id="s-sub"></div>
+      <div class="nav-item" onclick="toggleSection('s-support')"><div class="nav-item-left"><span class="nav-icon">🎧</span> Support Center</div><span class="nav-chevron" id="chev-support">›</span></div>
+      <div class="nav-sub" id="s-support"></div>
+      <div class="nav-item" onclick="toggleSection('s-admset')"><div class="nav-item-left"><span class="nav-icon">🔧</span> Admin Settings</div><span class="nav-chevron" id="chev-admset">›</span></div>
+      <div class="nav-sub" id="s-admset"></div>
+      <div class="nav-item" onclick="toggleSection('s-devset')"><div class="nav-item-left"><span class="nav-icon">🛠</span> Dev Settings</div><span class="nav-chevron" id="chev-devset">›</span></div>
+      <div class="nav-sub" id="s-devset"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Dashboard</div>
+    <div class="topbar-right">
+      <span>Abhinaya K.</span>
+      <div class="avatar">AK</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- SCREEN: DASHBOARD -->
+    <div class="screen active" id="screen-dashboard">
+
+      <!-- Discovery call action banner -->
+      <div class="dc-banner">
+        <div class="dc-banner-left">
+          <div class="dc-banner-icon">📞</div>
+          <div>
+            <div class="dc-banner-title">2 new discovery call requests need attention</div>
+            <div class="dc-banner-sub">Priya Nair and Rahul Srinivasan are awaiting confirmation</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <div class="dc-banner-pills">
+            <span class="dc-pill dc-pill-new" onclick="showScreen('discovery');setActive('nav-dc')">2 New</span>
+            <span class="dc-pill dc-pill-confirmed">2 Confirmed</span>
+            <span class="dc-pill dc-pill-noshow">1 No Show</span>
+            <span class="dc-pill dc-pill-completed">1 Completed</span>
+          </div>
+          <button class="btn-orange" onclick="showScreen('discovery');setActive('nav-dc')">View all →</button>
+        </div>
+      </div>
+
+      <!-- Metric cards row 1 -->
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-icon mi-blue">📋</div>
+          <div><div class="metric-label">Job Post</div><div class="metric-value">14</div></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon mi-green">✅</div>
+          <div><div class="metric-label">Active Post</div><div class="metric-value">14</div></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon mi-orange">🏢</div>
+          <div><div class="metric-label">Client</div><div class="metric-value">0</div></div>
+        </div>
+      </div>
+      <!-- Row 2 -->
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-icon mi-gray">👤</div>
+          <div><div class="metric-label">Total candidates</div><div class="metric-value">0</div></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon mi-orange">🎫</div>
+          <div><div class="metric-label">Tickets — Client</div><div class="metric-value">0</div></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon mi-orange">🎫</div>
+          <div><div class="metric-label">Tickets — Candidate</div><div class="metric-value">0</div></div>
+        </div>
+      </div>
+      <!-- Row 3: new DC cards -->
+      <div class="metrics-row">
+        <div class="metric-card highlight" onclick="showScreen('discovery');setActive('nav-dc')">
+          <div class="metric-icon mi-teal">📞</div>
+          <div><div class="metric-label">Discovery Calls this month</div><div class="metric-value">6</div></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon mi-green">💳</div>
+          <div><div class="metric-label">Converted to subscription</div><div class="metric-value">1</div></div>
+        </div>
+        <div class="metric-card" style="border:none;background:transparent;pointer-events:none"></div>
+      </div>
+
+      <!-- Existing dashboard tables -->
+      <div class="dash-filter">
+        <input class="filter-input" type="text" value="07/01/2026" style="width:96px">
+        <span style="color:#ADB5BD;font-size:11px">—</span>
+        <input class="filter-input" type="text" value="07/15/2026" style="width:96px">
+        <button class="btn-orange">Search</button>
+        <span style="font-size:18px;cursor:pointer;color:#6C757D;margin-left:4px">↻</span>
+      </div>
+      <div class="dash-tables">
+        <div class="table-card">
+          <div class="table-header-bar"><span class="table-title">Job Post</span></div>
+          <table>
+            <thead><tr><th>Title</th><th>Company</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody><tr><td colspan="4" style="text-align:center;color:#ADB5BD;padding:20px;font-size:12px">No records found</td></tr></tbody>
+          </table>
+          <div class="pagination"><span>Items per page: <select><option>10</option></select></span><span>0–0 of 0</span><div class="page-nav"><button class="page-btn" disabled>‹</button><button class="page-btn" disabled>›</button></div></div>
+        </div>
+        <div class="table-card">
+          <div class="table-header-bar"><span class="table-title">Company</span></div>
+          <table>
+            <thead><tr><th>Name</th><th>Sector</th><th>Date</th></tr></thead>
+            <tbody><tr><td colspan="3" style="text-align:center;color:#ADB5BD;padding:20px;font-size:12px">No records found</td></tr></tbody>
+          </table>
+          <div class="pagination"><span>Items per page: <select><option>10</option></select></span><span>0–0 of 0</span><div class="page-nav"><button class="page-btn" disabled>‹</button><button class="page-btn" disabled>›</button></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN: DISCOVERY CALLS LIST -->
+    <div class="screen" id="screen-discovery">
+      <div class="filter-row">
+        <input class="filter-input" type="text" placeholder="mm/dd/yyyy" style="width:92px">
+        <span style="color:#ADB5BD;font-size:11px">—</span>
+        <input class="filter-input" type="text" placeholder="mm/dd/yyyy" style="width:92px">
+        <select class="filter-select">
+          <option>All roles</option>
+          <option>Semiconductor</option>
+          <option>Pharma</option>
+          <option>Technology</option>
+          <option>Automotive</option>
+          <option>Financial Services</option>
+        </select>
+        <select class="filter-select">
+          <option>All</option>
+          <option>New</option>
+          <option>Confirmed</option>
+          <option>Call Completed</option>
+          <option>No Show</option>
+          <option>Not Qualified</option>
+          <option>Subscribed</option>
+          <option>Declined</option>
+        </select>
+        <button class="btn-orange">Apply Filter</button>
+        <div class="filter-spacer"></div>
+        <button class="btn-outline">Import</button>
+        <button class="btn-orange">Export as Excel</button>
+      </div>
+      <div class="table-card">
+        <div class="table-header-bar"><span class="table-title">Discovery Call Requests</span></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th><th>Email</th><th>Source</th><th>Role Interest</th>
+              <th>Call Date/Time</th><th>Status</th><th>Date</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="dc-tbody"></tbody>
+        </table>
+        <div class="pagination">
+          <span>Items per page: <select><option>10</option><option>25</option><option>50</option></select></span>
+          <span>1–6 of 6</span>
+          <div class="page-nav"><button class="page-btn" disabled>‹</button><button class="page-btn" disabled>›</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN: CANDIDATE DETAIL -->
+    <div class="screen" id="screen-detail">
+      <div class="detail-back" onclick="showScreen('discovery');setActive('nav-dc')">← Back to Discovery Calls</div>
+      <div class="detail-grid">
+        <div class="detail-card">
+          <div class="detail-section-title">Contact</div>
+          <div class="detail-row"><div class="detail-label">Full name</div><div class="detail-value" id="d-name">—</div></div>
+          <div class="detail-row"><div class="detail-label">Email</div><div class="detail-value" id="d-email">—</div></div>
+          <div class="detail-row"><div class="detail-label">Location</div><div class="detail-value" id="d-location">—</div></div>
+          <div class="detail-row"><div class="detail-label">Current role</div><div class="detail-value" id="d-role">—</div></div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-section-title">Booking details</div>
+          <div class="detail-row"><div class="detail-label">Source</div><div class="detail-value" id="d-source-detail">—</div></div>
+          <div class="detail-row"><div class="detail-label">Role interest</div><div class="detail-value" id="d-interest">—</div></div>
+          <div class="detail-row"><div class="detail-label">Booked call time</div><div class="detail-value" id="d-calltime">—</div></div>
+          <div class="detail-row"><div class="detail-label">Submission date</div><div class="detail-value" id="d-submitted">—</div></div>
+          <div class="detail-row"><div class="detail-label">CV</div><div class="detail-value"><span id="d-cv-link" style="color:#E8622A;cursor:pointer;text-decoration:underline" onclick="openCvFromDetail()">View CV</span></div></div>
+        </div>
+      </div>
+      <div class="detail-grid" style="margin-top:14px">
+        <div class="detail-card">
+          <div class="detail-section-title">Candidate notes</div>
+          <div class="detail-notes" id="d-notes">—</div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-section-title">Status</div>
+          <div class="detail-row"><div class="detail-label">Current status</div><div class="detail-value" id="d-status-label">—</div></div>
+          <div class="detail-status-row">
+            <select class="detail-status-select" id="d-status-select">
+              <option>New</option><option>Confirmed</option><option>Call Completed</option>
+              <option>Subscribed</option><option>No Show</option><option>Not Qualified</option><option>Declined</option>
+            </select>
+            <button class="btn-orange" onclick="saveStatus()">Save</button>
+          </div>
+        </div>
+      </div>
+      <div class="detail-card-full">
+        <div class="detail-section-title">Recruiter notes</div>
+        <textarea class="detail-textarea" id="d-recruiter-notes" placeholder="Add internal notes about this candidate"></textarea>
+        <div style="margin-top:10px"><button class="btn-orange" onclick="saveRecruiterNote()">Save</button></div>
+      </div>
+      <div class="detail-card-full">
+        <div class="detail-section-title">Follow-up log</div>
+        <div id="d-log"></div>
+        <div class="add-note-area">
+          <textarea class="add-note-input" id="new-note-input" rows="2" placeholder="Add a note…"></textarea>
+          <button class="btn-orange" onclick="addNote()">Add note</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN: PLACEHOLDER -->
+    <div class="screen" id="screen-placeholder">
+      <div class="placeholder-screen">
+        <span style="font-size:28px">📄</span>
+        <span id="placeholder-label" style="color:#6C757D">Section</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CV MODAL -->
+<div class="modal-overlay" id="cv-modal" onclick="handleCvOverlay(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <div class="modal-header-title" id="cv-modal-name">CV</div>
+        <div class="modal-header-meta" id="cv-modal-meta"></div>
+      </div>
+      <button class="modal-close" onclick="closeCv()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-toolbar">
+      <button class="btn-outline" onclick="window.print()">⬇ Download PDF</button>
+      <button class="btn-outline" onclick="closeCv()">Close</button>
+    </div>
+    <div class="modal-body" id="cv-modal-body"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const statusClass={
+  'New':'status-new','Confirmed':'status-confirmed','Call Completed':'status-completed',
+  'Subscribed':'status-subscribed','No Show':'status-noshow',
+  'Not Qualified':'status-notqualified','Declined':'status-declined'
+};
+
+const rows=[
+  {id:0,name:'Priya Nair',email:'priya.nair@gmail.com',source:'Job listing',interest:'Process Engineer — Advanced Packaging',calldt:'24 Jul 2026 · 3:00 PM',status:'New',date:'15 Jul 2026',location:'Singapore',curRole:'Packaging Engineer, Semiconductor',notes:'Currently based in Singapore. 10 years in semiconductor packaging at TSMC. Open to Bangalore or Hyderabad. Notice period 3 months.',log:[{ts:'15 Jul 2026, 4:10 PM',text:'Status updated to New. Assigned to Abhinaya K.'},{ts:'15 Jul 2026, 3:45 PM',text:'New request received via job listing (Process Engineer)'}]},
+  {id:1,name:'Arjun Mehta',email:'arjun.mehta@outlook.com',source:'Back2Bharat',interest:'General',calldt:'25 Jul 2026 · 11:00 AM',status:'Confirmed',date:'14 Jul 2026',location:'London, UK',curRole:'Product Manager, Technology',notes:'Interested in technology sector roles in Pune or Bangalore.',log:[{ts:'14 Jul 2026, 2:00 PM',text:'New request received via Back2Bharat landing page'}]},
+  {id:2,name:'Kavya Iyer',email:'kavya.iyer@proton.me',source:'Job listing',interest:'CFO — Pharma Scale-up',calldt:'22 Jul 2026 · 2:00 PM',status:'No Show',date:'13 Jul 2026',location:'Dubai, UAE',curRole:'Finance Director, Pharma',notes:'CFO-level candidate. Based in Dubai. Open to Mumbai.',log:[{ts:'13 Jul 2026, 9:00 AM',text:'New request received via job listing (CFO — Pharma Scale-up)'}]},
+  {id:3,name:'Rahul Srinivasan',email:'rahul.s@ieee.org',source:'Job listing',interest:'Data Engineering Lead — GCP',calldt:'28 Jul 2026 · 10:00 AM',status:'New',date:'13 Jul 2026',location:'Seattle, USA',curRole:'Data Engineer, Technology',notes:'Strong GCP background. Open to Hyderabad or remote-first.',log:[{ts:'13 Jul 2026, 10:30 AM',text:'New request received via job listing (Data Engineering Lead)'}]},
+  {id:4,name:'Deepa Krishnamurthy',email:'deepa.k@yahoo.com',source:'Back2Bharat',interest:'General',calldt:'20 Jul 2026 · 4:00 PM',status:'Call Completed',date:'11 Jul 2026',location:'Toronto, Canada',curRole:'Operations Lead, Healthcare',notes:'Looking to return to India for family reasons. Open to most sectors.',log:[{ts:'11 Jul 2026, 11:00 AM',text:'New request received via Back2Bharat'}]},
+  {id:5,name:'Vikram Patil',email:'vpatil@gmail.com',source:'Job listing',interest:'Supply Chain Lead — EV Components',calldt:'18 Jul 2026 · 9:30 AM',status:'Subscribed',date:'10 Jul 2026',location:'Frankfurt, Germany',curRole:'Supply Chain Manager, Automotive',notes:'10 years in EV supply chain in Germany. Interested in Chennai or Pune.',log:[{ts:'10 Jul 2026, 3:00 PM',text:'Upgraded to Plus plan. Subscription confirmed.'},{ts:'10 Jul 2026, 9:00 AM',text:'New request received via job listing (Supply Chain Lead)'}]}
+];
+
+const cvData={
+  0:{
+    summary:'Senior packaging process engineer with 10+ years at TSMC Singapore. Specialist in advanced node packaging, fan-out wafer-level packaging, and yield optimisation.',
+    experience:[
+      {title:'Senior Process Engineer',company:'TSMC — Singapore',period:'2018 – Present',bullets:'Led process development for 3nm advanced packaging line. Reduced defect rate by 18% through SPC implementation. Managed cross-functional team of 8 engineers.'},
+      {title:'Process Engineer',company:'Infineon Technologies — Munich',period:'2014 – 2018',bullets:'Developed and qualified new packaging materials for automotive-grade ICs. Collaborated with equipment suppliers on new tool qualifications.'}
+    ],
+    education:[{degree:'M.Tech — Microelectronics',institution:'IIT Bombay',year:'2013'},{degree:'B.E — Electronics & Communication',institution:'NIT Trichy',year:'2011'}],
+    skills:['Advanced Packaging','Fan-out WLP','SPC / SQC','Yield Management','FMEA','GDS-II','Klarity ACE','Python','Semiconductor Process Integration']
+  },
+  1:{
+    summary:'Product Manager with 8 years in B2B SaaS. Track record of taking 0-to-1 products to market in fintech and enterprise software. Currently exploring senior PM roles in Bangalore or Pune.',
+    experience:[
+      {title:'Senior Product Manager',company:'Revolut — London',period:'2020 – Present',bullets:'Owned business accounts product area, 3.2M customers. Shipped 14 features in FY23 against 12-month roadmap. Worked closely with engineering and design in a 2-week sprint cadence.'},
+      {title:'Product Manager',company:'Zoho — Chennai',period:'2016 – 2020',bullets:'Managed CRM module for SMB segment. Led localisation for 8 European markets.'}
+    ],
+    education:[{degree:'MBA — Strategy & Marketing',institution:'IIM Kozhikode',year:'2016'},{degree:'B.Tech — Computer Science',institution:'VIT Vellore',year:'2014'}],
+    skills:['Product Strategy','Roadmapping','A/B Testing','SQL','Figma','JIRA','Amplitude','Stakeholder Management','B2B SaaS']
+  },
+  2:{
+    summary:'CFO with 16 years across pharma manufacturing and specialty chemicals. Experienced in pre-IPO financial structuring, investor relations, and global treasury operations.',
+    experience:[
+      {title:'Finance Director',company:'Julphar Pharmaceuticals — Dubai',period:'2019 – Present',bullets:'Oversaw $420M annual P&L. Led debt restructuring exercise saving AED 38M. Managed relationships with 6 regional banks and 2 PE investors.'},
+      {title:'Head of Finance',company:'Sun Pharma — Mumbai',period:'2013 – 2019',bullets:'Supported 3 acquisitions totalling $180M. Implemented SAP S/4HANA across 4 plants.'}
+    ],
+    education:[{degree:'CA — Institute of Chartered Accountants of India',institution:'ICAI',year:'2008'},{degree:'B.Com',institution:'Sydenham College, Mumbai',year:'2005'}],
+    skills:['Financial Planning & Analysis','IPO Readiness','M&A','SAP S/4HANA','Treasury','Investor Relations','IFRS','Cost Optimisation']
+  },
+  3:{
+    summary:'Data engineering lead with 9 years building large-scale data pipelines on GCP and AWS. Passionate about data platform architecture and team building. Targeting Hyderabad or hybrid roles.',
+    experience:[
+      {title:'Staff Data Engineer',company:'Amazon — Seattle',period:'2019 – Present',bullets:'Architected real-time event streaming platform processing 4B events/day. Led team of 6 engineers. Reduced pipeline latency by 60% using Dataflow + Pub/Sub.'},
+      {title:'Data Engineer',company:'Flipkart — Bangalore',period:'2015 – 2019',bullets:'Built data lake on GCS for supply chain analytics. Owned ETL pipelines serving 12 internal teams.'}
+    ],
+    education:[{degree:'M.Tech — Data Science',institution:'IIT Hyderabad',year:'2015'},{degree:'B.E — Information Technology',institution:'Anna University',year:'2013'}],
+    skills:['GCP (Dataflow, BigQuery, Pub/Sub)','Apache Kafka','dbt','Python','Spark','Airflow','SQL','Data Modelling','Team Leadership']
+  },
+  4:{
+    summary:'Operations leader with 12 years in healthcare supply chain and hospital operations. Seeking a senior role in India to be closer to family. Open to most sectors.',
+    experience:[
+      {title:'Director of Operations',company:'Ontario Health — Toronto',period:'2017 – Present',bullets:'Managed $85M operations budget across 3 hospitals. Drove 22% reduction in procurement costs. Led transition to centralised supply chain model.'},
+      {title:'Operations Manager',company:'Apollo Hospitals — Chennai',period:'2012 – 2017',bullets:'Oversaw day-to-day operations for 450-bed facility. Implemented lean processes reducing patient wait time by 30%.'}
+    ],
+    education:[{degree:'MBA — Operations Management',institution:'XLRI Jamshedpur',year:'2012'},{degree:'B.Sc — Life Sciences',institution:'Madras University',year:'2010'}],
+    skills:['Supply Chain Management','Lean / Six Sigma','Budget Management','Healthcare Operations','Vendor Management','ERP (SAP)','Process Improvement']
+  },
+  5:{
+    summary:'Supply chain professional with 11 years in automotive and EV components manufacturing across Germany and India. Subscribed to GTX Plus. Ready to relocate to Chennai or Pune within 60 days.',
+    experience:[
+      {title:'Supply Chain Manager',company:'Bosch — Frankfurt',period:'2016 – Present',bullets:'Led end-to-end supply chain for EV powertrain components. Managed €120M vendor portfolio across 14 countries. Reduced supplier lead time by 25% through dual-sourcing strategy.'},
+      {title:'Procurement Engineer',company:'Tata Motors — Pune',period:'2013 – 2016',bullets:'Sourced sheet metal and plastic components for passenger vehicle line. Managed 40+ tier-1 suppliers.'}
+    ],
+    education:[{degree:'M.Sc — Supply Chain & Logistics',institution:'TU München',year:'2013'},{degree:'B.E — Mechanical Engineering',institution:'COEP Pune',year:'2011'}],
+    skills:['Supply Chain Strategy','Vendor Development','Dual Sourcing','SAP MM','APICS CSCP','Lean Manufacturing','Cross-border Procurement','EV Components']
+  }
+};
+
+let currentRowId=0;
+
+function openCv(id,e){
+  if(e) e.stopPropagation();
+  const r=rows[id];
+  const cv=cvData[id];
+  document.getElementById('cv-modal-name').textContent=r.name+' — CV';
+  document.getElementById('cv-modal-meta').textContent=r.curRole+' · '+r.location;
+  document.getElementById('cv-modal-body').innerHTML=`
+    <div class="cv-name">${r.name}</div>
+    <div class="cv-contact">${r.email} &nbsp;·&nbsp; ${r.location} &nbsp;·&nbsp; ${r.curRole}</div>
+    <div class="cv-section">
+      <div class="cv-section-title">Profile</div>
+      <div class="cv-entry-body">${cv.summary}</div>
+    </div>
+    <div class="cv-section">
+      <div class="cv-section-title">Experience</div>
+      ${cv.experience.map(ex=>`
+        <div class="cv-entry">
+          <div class="cv-entry-title">${ex.title}</div>
+          <div class="cv-entry-sub">${ex.company} &nbsp;·&nbsp; ${ex.period}</div>
+          <div class="cv-entry-body">${ex.bullets}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="cv-section">
+      <div class="cv-section-title">Education</div>
+      ${cv.education.map(ed=>`
+        <div class="cv-entry">
+          <div class="cv-entry-title">${ed.degree}</div>
+          <div class="cv-entry-sub">${ed.institution} &nbsp;·&nbsp; ${ed.year}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="cv-section">
+      <div class="cv-section-title">Skills</div>
+      <div class="cv-skills">${cv.skills.map(s=>`<span class="cv-skill">${s}</span>`).join('')}</div>
+    </div>
+  `;
+  document.getElementById('cv-modal').classList.add('open');
+  document.querySelectorAll('.action-menu').forEach(m=>m.classList.remove('open'));
+}
+
+function openCvFromDetail(){
+  openCv(currentRowId);
+}
+
+function closeCv(){
+  document.getElementById('cv-modal').classList.remove('open');
+}
+
+function handleCvOverlay(e){
+  if(e.target===document.getElementById('cv-modal')) closeCv();
+}
+
+function renderTable(){
+  const tb=document.getElementById('dc-tbody');
+  tb.innerHTML=rows.map(r=>`
+    <tr class="clickable" onclick="openDetail(${r.id})">
+      <td style="font-weight:500">${r.name}</td>
+      <td style="color:#6C757D">${r.email}</td>
+      <td><span class="source-label ${r.source==='Job listing'?'src-job':'src-b2b'}">${r.source}</span></td>
+      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.interest}</td>
+      <td style="white-space:nowrap">${r.calldt}</td>
+      <td>
+        <select class="status-select ${statusClass[r.status]}" data-id="${r.id}" onclick="event.stopPropagation()" onchange="updateRowStatus(${r.id},this.value)">
+          ${['New','Confirmed','Call Completed','Subscribed','No Show','Not Qualified','Declined'].map(s=>`<option${s===r.status?' selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td style="color:#ADB5BD;white-space:nowrap">${r.date}</td>
+      <td onclick="event.stopPropagation()">
+        <div class="action-wrap">
+          <button class="action-btn" onclick="toggleMenu(event,${r.id})">Action ▾</button>
+          <div class="action-menu" id="am-${r.id}">
+            <div class="action-menu-item" onclick="openDetail(${r.id})">View Details</div>
+            <div class="action-menu-item" onclick="openCv(${r.id},event)">View CV</div>
+            <div class="action-menu-item" onclick="openDetail(${r.id})">Update Status</div>
+            <div class="action-menu-item" onclick="openDetail(${r.id})">Add Note</div>
+          </div>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function toggleMenu(e,id){
+  e.stopPropagation();
+  document.querySelectorAll('.action-menu').forEach(m=>{if(m.id!=='am-'+id)m.classList.remove('open')});
+  document.getElementById('am-'+id).classList.toggle('open');
+}
+document.addEventListener('click',()=>document.querySelectorAll('.action-menu').forEach(m=>m.classList.remove('open')));
+
+function updateRowStatus(id,val){
+  rows[id].status=val;
+  renderTable();
+  showToast('Status updated to '+val);
+}
+
+function openDetail(id){
+  currentRowId=id;
+  const r=rows[id];
+  document.getElementById('d-name').textContent=r.name;
+  document.getElementById('d-email').textContent=r.email;
+  document.getElementById('d-location').textContent=r.location;
+  document.getElementById('d-role').textContent=r.curRole;
+  document.getElementById('d-source-detail').innerHTML=`<span class="source-label ${r.source==='Job listing'?'src-job':'src-b2b'}">${r.source}</span>`;
+  document.getElementById('d-interest').textContent=r.interest==='General'?'General inquiry':r.interest;
+  document.getElementById('d-calltime').textContent=r.calldt;
+  document.getElementById('d-submitted').textContent=r.date;
+  document.getElementById('d-notes').textContent=r.notes;
+  document.getElementById('d-status-label').innerHTML=`<span class="${statusClass[r.status]}">${r.status}</span>`;
+  document.getElementById('d-status-select').value=r.status;
+  document.getElementById('d-recruiter-notes').value=r.recruiterNote||'';
+  renderLog(id);
+  showScreen('detail');
+  setActive('nav-dc');
+  document.getElementById('page-title').textContent=r.name;
+}
+
+function renderLog(id){
+  document.getElementById('d-log').innerHTML=rows[id].log.map(e=>`
+    <div class="log-entry"><div class="log-time">${e.ts}</div><div class="log-text">${e.text}</div></div>
+  `).join('');
+}
+
+function saveStatus(){
+  const val=document.getElementById('d-status-select').value;
+  rows[currentRowId].status=val;
+  document.getElementById('d-status-label').innerHTML=`<span class="${statusClass[val]}">${val}</span>`;
+  appendLog(currentRowId,'Status updated to '+val+'.');
+  renderTable();
+  showToast('Status saved');
+}
+
+function saveRecruiterNote(){
+  const val=document.getElementById('d-recruiter-notes').value.trim();
+  if(!val) return;
+  rows[currentRowId].recruiterNote=val;
+  appendLog(currentRowId,'Recruiter note saved.');
+  showToast('Note saved');
+}
+
+function addNote(){
+  const input=document.getElementById('new-note-input');
+  const val=input.value.trim();
+  if(!val) return;
+  appendLog(currentRowId,val);
+  input.value='';
+}
+
+function appendLog(id,text){
+  const now=new Date();
+  const ts=now.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+', '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  rows[id].log.unshift({ts,text});
+  renderLog(id);
+}
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  const titles={dashboard:'Dashboard',discovery:'Discovery Calls',placeholder:document.getElementById('placeholder-label').textContent};
+  if(name!=='detail') document.getElementById('page-title').textContent=titles[name]||name;
+}
+
+function setActive(id){
+  document.querySelectorAll('.nav-plain,.nav-sub-item,.nav-pinned').forEach(el=>el.classList.remove('active'));
+  const el=document.getElementById(id);
+  if(el) el.classList.add('active');
+}
+
+function showPlaceholder(label){
+  document.getElementById('placeholder-label').textContent=label;
+  document.getElementById('page-title').textContent=label;
+  showScreen('placeholder');
+  document.querySelectorAll('.nav-plain,.nav-sub-item,.nav-pinned').forEach(el=>el.classList.remove('active'));
+}
+
+function toggleSection(id){
+  const sub=document.getElementById(id);
+  const key=id.replace('s-','');
+  const chev=document.getElementById('chev-'+key);
+  sub.classList.toggle('open');
+  if(chev) chev.classList.toggle('open');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+renderTable();
+</script>
+</body>
+</html>
